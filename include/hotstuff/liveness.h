@@ -289,7 +289,7 @@ class PMRoundRobinProposer: virtual public PaceMaker {
         });
     }
 
-    void do_new_consensus(int x, const std::vector<uint256_t> &cmds) {
+    void do_new_consensus(int x, const std::vector<bytearray_t> &cmds) {
         auto blk = hsc->on_propose(cmds, get_parents(), bytearray_t());
         pm_qc_manual.reject();
         (pm_qc_manual = hsc->async_qc_finish(blk))
@@ -300,13 +300,13 @@ class PMRoundRobinProposer: virtual public PaceMaker {
 #else
                 if (x >= 3) return;
 #endif
-                do_new_consensus(x + 1, std::vector<uint256_t>{});
+                do_new_consensus(x + 1, std::vector<bytearray_t>{});
             });
     }
 
     void on_exp_timeout(TimerEvent &) {
         if (proposer == hsc->get_id())
-            do_new_consensus(0, std::vector<uint256_t>{});
+            do_new_consensus(0, std::vector<bytearray_t>{});
         timer = TimerEvent(ec, [this](TimerEvent &){ rotate(); });
         timer.add(prop_delay);
     }
@@ -347,7 +347,7 @@ class PMRoundRobinProposer: virtual public PaceMaker {
                 auto &pending = hs->get_decision_waiting();
                 if (!pending.size()) return;
                 HOTSTUFF_LOG_PROTO("reproposing pending commands");
-                std::vector<uint256_t> cmds;
+                std::vector<bytearray_t> cmds;
                 for (auto &p: pending)
                     cmds.push_back(p.first);
                 do_new_consensus(0, cmds);

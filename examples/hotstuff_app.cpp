@@ -337,10 +337,12 @@ HotStuffApp::HotStuffApp(uint32_t blk_size,
 
 void HotStuffApp::client_request_cmd_handler(MsgReqCmd &&msg, const conn_t &conn) {
     const NetAddr addr = conn->get_addr();
-    auto cmd = parse_cmd(msg.serialized);
-    const auto &cmd_hash = cmd->get_hash();
-    HOTSTUFF_LOG_DEBUG("processing %s", std::string(*cmd).c_str());
-    exec_command(cmd_hash, [this, addr](Finality fin) {
+    size_t len = msg.serialized.size();
+    const uint8_t *data = msg.serialized.get_data_inplace(len);
+    bytearray_t cmd;
+    cmd.insert(cmd.end(), data, data + len);
+    HOTSTUFF_LOG_DEBUG("processing cmd of %lu bytes", cmd.size());
+    exec_command(cmd, [this, addr](Finality fin) {
         resp_queue.enqueue(std::make_pair(fin, addr));
     });
 }

@@ -93,7 +93,7 @@ bool try_send(bool check = true) {
 void client_resp_cmd_handler(MsgRespCmd &&msg, const Net::conn_t &) {
     auto &fin = msg.fin;
     HOTSTUFF_LOG_DEBUG("got %s", std::string(msg.fin).c_str());
-    const uint256_t &cmd_hash = fin.cmd_hash;
+    const uint256_t &cmd_hash = salticidae::get_hash(fin.cmd);
     auto it = waiting.find(cmd_hash);
     auto &et = it->second.et;
     if (it == waiting.end()) return;

@@ -102,7 +102,7 @@ class HotStuffCore {
     /** Call to submit new commands to be decided (executed). "Parents" must
      * contain at least one block, and the first block is the actual parent,
      * while the others are uncles/aunts */
-    block_t on_propose(const std::vector<uint256_t> &cmds,
+    block_t on_propose(const std::vector<bytearray_t> &cmds,
                     const std::vector<block_t> &parents,
                     bytearray_t &&extra = bytearray_t());
 
@@ -270,7 +270,7 @@ struct Finality: public Serializable {
     int8_t decision;
     uint32_t cmd_idx;
     uint32_t cmd_height;
-    uint256_t cmd_hash;
+    bytearray_t cmd;
     uint256_t blk_hash;
     
     public:
@@ -279,23 +279,29 @@ struct Finality: public Serializable {
             int8_t decision,
             uint32_t cmd_idx,
             uint32_t cmd_height,
-            uint256_t cmd_hash,
+            bytearray_t cmd,
             uint256_t blk_hash):
         rid(rid), decision(decision),
         cmd_idx(cmd_idx), cmd_height(cmd_height),
-        cmd_hash(cmd_hash), blk_hash(blk_hash) {}
+        cmd(cmd), blk_hash(blk_hash) {}
 
     void serialize(DataStream &s) const override {
         s << rid << decision
           << cmd_idx << cmd_height
-          << cmd_hash;
+          << htonl((uint32_t) cmd.size()) << cmd;
         if (decision == 1) s << blk_hash;
     }
 
     void unserialize(DataStream &s) override {
+        const uint8_t *data;
+        uint32_t len;
         s >> rid >> decision
           >> cmd_idx >> cmd_height
-          >> cmd_hash;
+          >> len;
+        len = ntohl(len);
+        data = s.get_data_inplace(len);
+        cmd.clear();
+        cmd.insert(cmd.end(), data, data + len);
         if (decision == 1) s >> blk_hash;
     }
 
@@ -305,7 +311,7 @@ struct Finality: public Serializable {
           << "decision=" << std::to_string(decision) << " "
           << "cmd_idx=" << std::to_string(cmd_idx) << " "
           << "cmd_height=" << std::to_string(cmd_height) << " "
-          << "cmd=" << get_hex10(cmd_hash) << " "
+          << "cmd=" << std::to_string(cmd.size()) << " "
           << "blk=" << get_hex10(blk_hash) << ">";
         return s;
     }

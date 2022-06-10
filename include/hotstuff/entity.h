@@ -119,7 +119,7 @@ get_hashes(const std::vector<Hashable> &plist) {
 class Block {
     friend HotStuffCore;
     std::vector<uint256_t> parent_hashes;
-    std::vector<uint256_t> cmds;
+    std::vector<bytearray_t> cmds;
     quorum_cert_bt qc;
     bytearray_t extra;
 
@@ -149,7 +149,7 @@ class Block {
         delivered(delivered), decision(decision) {}
 
     Block(const std::vector<block_t> &parents,
-        const std::vector<uint256_t> &cmds,
+        const std::vector<bytearray_t> &cmds,
         quorum_cert_bt &&qc,
         bytearray_t &&extra,
         uint32_t height,
@@ -172,7 +172,7 @@ class Block {
 
     void unserialize(DataStream &s, HotStuffCore *hsc);
 
-    const std::vector<uint256_t> &get_cmds() const {
+    const std::vector<bytearray_t> &get_cmds() const {
         return cmds;
     }
 

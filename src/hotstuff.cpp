@@ -76,8 +76,8 @@ void MsgRespBlock::postponed_parse(HotStuffCore *hsc) {
 }
 
 // TODO: improve this function
-void HotStuffBase::exec_command(uint256_t cmd_hash, commit_cb_t callback) {
-    cmd_pending.enqueue(std::make_pair(cmd_hash, callback));
+void HotStuffBase::exec_command(bytearray_t cmd, commit_cb_t callback) {
+    cmd_pending.enqueue(std::make_pair(cmd, callback));
 }
 
 void HotStuffBase::on_fetch_blk(const block_t &blk) {
@@ -403,7 +403,7 @@ void HotStuffBase::do_consensus(const block_t &blk) {
 void HotStuffBase::do_decide(Finality &&fin) {
     part_decided++;
     state_machine_execute(fin);
-    auto it = decision_waiting.find(fin.cmd_hash);
+    auto it = decision_waiting.find(fin.cmd);
     if (it != decision_waiting.end())
     {
         it->second(std::move(fin));
@@ -442,22 +442,22 @@ void HotStuffBase::start(
         ec.dispatch();
 
     cmd_pending.reg_handler(ec, [this](cmd_queue_t &q) {
-        std::pair<uint256_t, commit_cb_t> e;
+        std::pair<bytearray_t, commit_cb_t> e;
         while (q.try_dequeue(e))
         {
             ReplicaID proposer = pmaker->get_proposer();
 
-            const auto &cmd_hash = e.first;
-            auto it = decision_waiting.find(cmd_hash);
+            const bytearray_t &cmd = e.first;
+            auto it = decision_waiting.find(cmd);
             if (it == decision_waiting.end())
-                it = decision_waiting.insert(std::make_pair(cmd_hash, e.second)).first;
+                it = decision_waiting.insert(std::make_pair(cmd, e.second)).first;
             else
-                e.second(Finality(id, 0, 0, 0, cmd_hash, uint256_t()));
+                e.second(Finality(id, 0, 0, 0, cmd, uint256_t()));
             if (proposer != get_id()) continue;
-            cmd_pending_buffer.push(cmd_hash);
+            cmd_pending_buffer.push(cmd);
             if (cmd_pending_buffer.size() >= blk_size)
             {
-                std::vector<uint256_t> cmds;
+                std::vector<bytearray_t> cmds;
                 for (uint32_t i = 0; i < blk_size; i++)
                 {
                     cmds.push_back(cmd_pending_buffer.front());

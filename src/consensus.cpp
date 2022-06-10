@@ -151,7 +151,7 @@ void HotStuffCore::update(const block_t &nblk) {
     b_exec = blk;
 }
 
-block_t HotStuffCore::on_propose(const std::vector<uint256_t> &cmds,
+block_t HotStuffCore::on_propose(const std::vector<bytearray_t> &cmds,
                             const std::vector<block_t> &parents,
                             bytearray_t &&extra) {
     if (parents.empty())

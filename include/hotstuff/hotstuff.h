@@ -18,6 +18,7 @@
 #ifndef _HOTSTUFF_CORE_H
 #define _HOTSTUFF_CORE_H
 
+#include <map>
 #include <queue>
 #include <unordered_map>
 #include <unordered_set>
@@ -157,10 +158,10 @@ class HotStuffBase: public HotStuffCore {
     /* queues for async tasks */
     std::unordered_map<const uint256_t, BlockFetchContext> blk_fetch_waiting;
     std::unordered_map<const uint256_t, BlockDeliveryContext> blk_delivery_waiting;
-    std::unordered_map<const uint256_t, commit_cb_t> decision_waiting;
-    using cmd_queue_t = salticidae::MPSCQueueEventDriven<std::pair<uint256_t, commit_cb_t>>;
+    std::map<const bytearray_t, commit_cb_t> decision_waiting;
+    using cmd_queue_t = salticidae::MPSCQueueEventDriven<std::pair<bytearray_t, commit_cb_t>>;
     cmd_queue_t cmd_pending;
-    std::queue<uint256_t> cmd_pending_buffer;
+    std::queue<bytearray_t> cmd_pending_buffer;
 
     /* statistics */
     uint64_t fetched;
@@ -219,7 +220,7 @@ class HotStuffBase: public HotStuffCore {
     /* the API for HotStuffBase */
 
     /* Submit the command to be decided. */
-    void exec_command(uint256_t cmd_hash, commit_cb_t callback);
+    void exec_command(bytearray_t cmd, commit_cb_t callback);
     void start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> &&replicas,
                 bool ec_loop = false);
 
