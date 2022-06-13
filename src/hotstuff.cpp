@@ -75,6 +75,21 @@ void MsgRespBlock::postponed_parse(HotStuffCore *hsc) {
     }
 }
 
+const opcode_t MsgRelay::opcode;
+MsgRelay::MsgRelay(const bytearray_t &payload) {
+    serialized << htonl((uint32_t) payload.size());
+    serialized << payload;
+}
+
+MsgRelay::MsgRelay(DataStream &&s) {
+    const uint8_t *data;
+    uint32_t len;
+    s >> len;
+    len = ntohl(len);
+    data = s.get_data_inplace(len);
+    payload.insert(payload.end(), data, data + len);
+}
+
 // TODO: improve this function
 void HotStuffBase::exec_command(bytearray_t cmd, commit_cb_t callback) {
     cmd_pending.enqueue(std::make_pair(cmd, callback));
@@ -259,6 +274,13 @@ void HotStuffBase::resp_blk_handler(MsgRespBlock &&msg, const Net::conn_t &) {
         if (blk) on_fetch_blk(blk);
 }
 
+void HotStuffBase::relay_handler(MsgRelay &&msg, const Net::conn_t &) {
+    if (pmaker->get_proposer() != get_id())
+        return;
+    LOG_DEBUG("enqueue relayed payload");
+    cmd_pending.enqueue(std::make_pair(msg.payload, [](auto &&){}));
+}
+
 bool HotStuffBase::conn_handler(const salticidae::ConnPool::conn_t &conn, bool connected) {
     if (connected)
     {
@@ -364,6 +386,7 @@ HotStuffBase::HotStuffBase(uint32_t blk_size,
     pn.reg_handler(salticidae::generic_bind(&HotStuffBase::vote_handler, this, _1, _2));
     pn.reg_handler(salticidae::generic_bind(&HotStuffBase::req_blk_handler, this, _1, _2));
     pn.reg_handler(salticidae::generic_bind(&HotStuffBase::resp_blk_handler, this, _1, _2));
+    pn.reg_handler(salticidae::generic_bind(&HotStuffBase::relay_handler, this, _1, _2));
     pn.reg_conn_handler(salticidae::generic_bind(&HotStuffBase::conn_handler, this, _1, _2));
     pn.reg_error_handler([](const std::exception_ptr _err, bool fatal, int32_t async_id) {
         try {
@@ -453,7 +476,10 @@ void HotStuffBase::start(
                 it = decision_waiting.insert(std::make_pair(cmd, e.second)).first;
             else
                 e.second(Finality(id, 0, 0, 0, cmd, uint256_t()));
-            if (proposer != get_id()) continue;
+            if (proposer != get_id()) {
+                pn.multicast_msg(MsgRelay(cmd), peers);
+                continue;
+            }
             cmd_pending_buffer.push(cmd);
             if (cmd_pending_buffer.size() >= blk_size)
             {

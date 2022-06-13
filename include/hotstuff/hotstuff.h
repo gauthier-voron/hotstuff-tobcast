@@ -79,6 +79,14 @@ struct MsgRespBlock {
     void postponed_parse(HotStuffCore *hsc);
 };
 
+struct MsgRelay {
+    static const opcode_t opcode = 0x4;
+    DataStream serialized;
+    bytearray_t payload;
+    MsgRelay(const bytearray_t &p);
+    MsgRelay(DataStream &&s);
+};
+
 using promise::promise_t;
 
 class HotStuffBase;
@@ -191,6 +199,7 @@ class HotStuffBase: public HotStuffCore {
     inline void req_blk_handler(MsgReqBlock &&, const Net::conn_t &);
     /** receives a block */
     inline void resp_blk_handler(MsgRespBlock &&, const Net::conn_t &);
+    inline void relay_handler(MsgRelay &&, const Net::conn_t &);
 
     inline bool conn_handler(const salticidae::ConnPool::conn_t &, bool);
 
