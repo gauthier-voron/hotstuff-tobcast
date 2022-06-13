@@ -23,3 +23,6 @@ target_link_libraries(hotstuff-app hotstuff_static)
 
 add_executable(hotstuff-client hotstuff_client.cpp)
 target_link_libraries(hotstuff-client hotstuff_static)
+
+add_executable(hotstuff-tobcast hotstuff_tobcast.cpp)
+target_link_libraries(hotstuff-tobcast hotstuff_static)
