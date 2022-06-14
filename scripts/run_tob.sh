@@ -3,6 +3,7 @@
 set -e
 
 n=4
+b=1
 
 tmpdir="$(mktemp -d --suffix='.d' 'run_tob.XXXXXX')"
 echo "create work directory '${tmpdir}'"
@@ -40,8 +41,10 @@ client_port=7000
 
 for i in $(seq 0 $(( n - 1 ))) ; do
     printf "start replica ${i} -> "
-    ./examples/hotstuff-tobcast ${i} ${client_port}:"${tmpdir}/sk-${i}.bin" \
-				"${args[@]}" > "${tmpdir}/log-${i}.txt" 2>&1 &
+    ./examples/hotstuff-tobcast ${i} ${b} \
+				${client_port}:"${tmpdir}/sk-${i}.bin" \
+				"${args[@]}" \
+				> "${tmpdir}/log-${i}.txt" 2>&1 &
     pids+=($!)
     echo $!
     client_port=$(( client_port + 1 ))

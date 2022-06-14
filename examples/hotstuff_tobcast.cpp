@@ -21,7 +21,6 @@
 #define PACEMAKER_BASE_TIMEOUT        1
 #define PACEMAKER_PROP_DELAY          1
 
-#define REPLICA_BLKSIZE              50
 #define REPLICA_MAX_MSGLEN        65535
 #define REPLICA_REPLY_BURST           1
 #define REPLICA_WORKERS               1
@@ -109,10 +108,11 @@ class Replica: public HotStuff {
 
 
  public:
-    Replica(ReplicaID id, const NetAddr &listen, pacemaker_bt pmaker,
-        const bytearray_t &privkey, const EventContext &ec,
-        Net::Config &config, const NetAddr &clisten) :
-        HotStuff(REPLICA_BLKSIZE, id, privkey, listen,
+        Replica(ReplicaID id, size_t blksize, const NetAddr &listen,
+                pacemaker_bt pmaker, const bytearray_t &privkey,
+                const EventContext &ec, Net::Config &config,
+                const NetAddr &clisten) :
+        HotStuff(blksize, id, privkey, listen,
                move(pmaker), ec, REPLICA_WORKERS, config),
         cn(ec, ClientNet::Config()) {
         cn.reg_conn_handler(generic_bind(&Replica::on_co, this,_1,_2));
@@ -274,8 +274,9 @@ static int main_generate(const char *arg) {
     return 0;
 }
 
-static int run(int id, const NetAddr &clients, const HotStuffIdentity &privid,
-           const vector<pair<NetAddr, HotStuffIdentity>> &peers) {
+static int run(int id, size_t blksize, const NetAddr &clients,
+               const HotStuffIdentity &privid,
+               const vector<pair<NetAddr, HotStuffIdentity>> &peers) {
     vector<tuple<NetAddr, bytearray_t, bytearray_t>> peerids;
     Replica::Net::Config rconfig;
     BoxObj<Replica> replica;
@@ -299,8 +300,8 @@ static int run(int id, const NetAddr &clients, const HotStuffIdentity &privid,
         .tls_cert(new tlsX509(tlsX509::create_from_der
                       (peers[id].second.tlskey)));
 
-    replica = new Replica(id, peers[id].first, move(pmaker),
-                  privid.votekey, ec, rconfig, clients);
+    replica = new Replica(id, blksize, peers[id].first, move(pmaker),
+                          privid.votekey, ec, rconfig, clients);
 
     replica->start(peerids);
 
@@ -309,11 +310,14 @@ static int run(int id, const NetAddr &clients, const HotStuffIdentity &privid,
     return 0;
 }
 
+// ./main <id> <client-port>:<private-key>
+//        <replica-ip>:<consensus-port>:<public-key>...
 static int main_run(int argc, const char **argv) {
     vector<pair<NetAddr, HotStuffIdentity>> peers;
     vector<string> splitted;
     HotStuffIdentity privid;
     int i, id, cport, rport;
+    size_t blksize;
     NetAddr caddr;
 
     try {
@@ -325,11 +329,20 @@ static int main_run(int argc, const char **argv) {
         return 1;
     }
 
-    splitted = split(argv[2], ":");
+    try {
+        blksize = stoi(argv[2]);
+        HOTSTUFF_LOG_INFO("run replica with blksize %lu", blksize);
+    } catch (...) {
+        HOTSTUFF_LOG_ERROR("invalid blksize '%s' (must be ulong)",
+                   argv[2]);
+        return 1;
+    }
+
+    splitted = split(argv[3], ":");
 
     if (splitted.size() != 2) {
         HOTSTUFF_LOG_ERROR("invalid replica local info '%s' (must be "
-                   "'<client-port>;<private-path>')", argv[2]);
+                   "'<client-port>:<private-path>')", argv[3]);
         return 1;
     }
 
@@ -362,7 +375,7 @@ static int main_run(int argc, const char **argv) {
     HOTSTUFF_LOG_INFO("loaded private identity from '%s'",
               splitted[1].c_str());
 
-    for (i = 3; i < argc; i++) {
+    for (i = 4; i < argc; i++) {
         splitted = split(argv[i], ":");
 
         if (splitted.size() != 3) {
@@ -405,7 +418,7 @@ static int main_run(int argc, const char **argv) {
                   "replica %d", splitted[2].c_str(), (i - 3));
     }
 
-    return run(id, caddr, privid, peers);
+    return run(id, blksize, caddr, privid, peers);
 }
 
 int main(int argc, const char **argv) {
