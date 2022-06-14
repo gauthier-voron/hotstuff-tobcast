@@ -477,7 +477,7 @@ void HotStuffBase::start(
             else
                 e.second(Finality(id, 0, 0, 0, cmd, uint256_t()));
             if (proposer != get_id()) {
-                pn.multicast_msg(MsgRelay(cmd), peers);
+                // pn.multicast_msg(MsgRelay(cmd), peers);
                 continue;
             }
             cmd_pending_buffer.push(cmd);
