@@ -70,10 +70,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
 	loop {
 	    tokio::select! {
 		_ = ticker.tick() => {
-		    msg[0..8].copy_from_slice(&clid.to_be_bytes());
-		    msg[8..16].copy_from_slice(&msgid.to_be_bytes());
-		    msgid += 1;
-		    tob.broadcast(&msg).await;
+		    for _ in 0 .. burst {
+			msg[0..8].copy_from_slice(&clid.to_be_bytes());
+			msg[8..16].copy_from_slice(&msgid.to_be_bytes());
+			msgid += 1;
+			tob.broadcast(&msg).await;
+		    }
 		}
 		rep = tob.deliver() => {
 		    let sender =
