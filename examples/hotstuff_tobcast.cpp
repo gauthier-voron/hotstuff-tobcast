@@ -149,14 +149,15 @@ class Replica: public HotStuff {
         return true;
     }
 
-    void on_cli(MsgPayload &&msg, const conn_t &) {
+    void on_cli(MsgPayload &&msg, const conn_t &c) {
         HOTSTUFF_LOG_DEBUG("received client command (%lu bytes)",
                    msg.payload.size());
 
-        exec_command(msg.payload, [this, msg](Finality fin) {
+        exec_command(msg.payload, [this, msg, c](Finality fin) {
             if (!fin.decision)
-                HOTSTUFF_LOG_ERROR("command aborted -> not "
-                           "yet implemented");
+		on_cli(std::move(fin.cmd), c);
+                // HOTSTUFF_LOG_ERROR("command aborted -> not "
+                //            "yet implemented");
         });
     }
 };
