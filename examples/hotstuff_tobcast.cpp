@@ -155,9 +155,7 @@ class Replica: public HotStuff {
 
         exec_command(msg.payload, [this, msg, c](Finality fin) {
             if (!fin.decision)
-		on_cli(std::move(fin.cmd), c);
-                // HOTSTUFF_LOG_ERROR("command aborted -> not "
-                //            "yet implemented");
+                HOTSTUFF_LOG_ERROR("command aborted");
         });
     }
 };

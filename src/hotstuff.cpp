@@ -472,11 +472,13 @@ void HotStuffBase::start(
 
             const bytearray_t &cmd = e.first;
             auto it = decision_waiting.find(cmd);
-            if (it == decision_waiting.end())
+            if (it == decision_waiting.end()) {
                 it = decision_waiting.insert(std::make_pair(cmd, e.second)).first;
-            else
+            } else {
+		HOTSTUFF_LOG_ERROR("duplicated command -> abort");
                 e.second(Finality(id, 0, 0, 0, cmd, uint256_t()));
-            if (proposer != get_id()) {
+	    }
+	    if (proposer != get_id()) {
                 // pn.multicast_msg(MsgRelay(cmd), peers);
                 continue;
             }
