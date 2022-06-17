@@ -369,6 +369,7 @@ HotStuffBase::HotStuffBase(uint32_t blk_size,
         vpool(ec, nworker),
         pn(ec, netconfig),
         pmaker(std::move(pmaker)),
+        flusher(ec, std::bind(&HotStuffBase::flush_cb, this, _1)),
 
         fetched(0), delivered(0),
         nsent(0), nrecv(0),
@@ -434,6 +435,35 @@ void HotStuffBase::do_decide(Finality &&fin) {
     }
 }
 
+void HotStuffBase::flush_cb(TimerEvent &) {
+    if (has_flushed == false)
+        flush();
+    has_flushed = false;
+    flusher.add(1);
+}
+
+void HotStuffBase::flush() {
+    std::vector<bytearray_t> cmds;
+
+    if (pmaker->get_proposer() != get_id())
+        return;
+
+    for (uint32_t i = 0; (i < blk_size) && (!cmd_pending_buffer.empty()); i++)
+    {
+        cmds.push_back(cmd_pending_buffer.front());
+	cmd_pending_buffer.pop();
+    }
+
+    HOTSTUFF_LOG_DEBUG("flush %lu commands", cmds.size());
+
+    pmaker->beat().then([this, cmds = std::move(cmds)](ReplicaID proposer) {
+        if (proposer == get_id())
+            on_propose(cmds, pmaker->get_parents());
+    });
+
+    has_flushed = true;
+}
+
 HotStuffBase::~HotStuffBase() {}
 
 void HotStuffBase::start(
@@ -464,6 +494,8 @@ void HotStuffBase::start(
     if (ec_loop)
         ec.dispatch();
 
+    flusher.add(1);
+
     cmd_pending.reg_handler(ec, [this](cmd_queue_t &q) {
         std::pair<bytearray_t, commit_cb_t> e;
         while (q.try_dequeue(e))
@@ -485,16 +517,7 @@ void HotStuffBase::start(
             cmd_pending_buffer.push(cmd);
             if (cmd_pending_buffer.size() >= blk_size)
             {
-                std::vector<bytearray_t> cmds;
-                for (uint32_t i = 0; i < blk_size; i++)
-                {
-                    cmds.push_back(cmd_pending_buffer.front());
-                    cmd_pending_buffer.pop();
-                }
-                pmaker->beat().then([this, cmds = std::move(cmds)](ReplicaID proposer) {
-                    if (proposer == get_id())
-                        on_propose(cmds, pmaker->get_parents());
-                });
+                flush();
                 return true;
             }
         }

@@ -168,6 +168,8 @@ class HotStuffBase: public HotStuffCore {
     std::unordered_map<const uint256_t, BlockDeliveryContext> blk_delivery_waiting;
     std::map<const bytearray_t, commit_cb_t> decision_waiting;
     using cmd_queue_t = salticidae::MPSCQueueEventDriven<std::pair<bytearray_t, commit_cb_t>>;
+    TimerEvent flusher;
+    bool has_flushed = false;
     cmd_queue_t cmd_pending;
     std::queue<bytearray_t> cmd_pending_buffer;
 
@@ -202,6 +204,9 @@ class HotStuffBase: public HotStuffCore {
     inline void relay_handler(MsgRelay &&, const Net::conn_t &);
 
     inline bool conn_handler(const salticidae::ConnPool::conn_t &, bool);
+
+    void flush_cb(TimerEvent &);
+    void flush();
 
     void do_broadcast_proposal(const Proposal &) override;
     void do_vote(ReplicaID, const Vote &) override;
