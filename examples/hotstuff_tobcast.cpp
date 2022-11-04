@@ -21,7 +21,7 @@
 #define PACEMAKER_BASE_TIMEOUT        1
 #define PACEMAKER_PROP_DELAY          1
 
-#define REPLICA_MAX_MSGLEN        65535
+#define REPLICA_MAX_MSGLEN      1048576
 #define REPLICA_REPLY_BURST           1
 #define REPLICA_WORKERS               1
 
