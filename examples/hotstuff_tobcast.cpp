@@ -126,14 +126,14 @@ class Replica: public HotStuff {
             const auto &client = *it;
 
             try {
-                if (fin.cmd.size() >= 8) {
+                if (fin.cmd.size() >= 42) {
                     HOTSTUFF_LOG_DEBUG("reply client %lu bytes to %s: %02hhx "
 				       "%02hhx %02hhx %02hhx %02hhx %02hhx "
 				       "%02hhx %02hhx", fin.cmd.size(),
-				       string(client).c_str(), fin.cmd[0],
-				       fin.cmd[1], fin.cmd[2], fin.cmd[3],
-				       fin.cmd[4], fin.cmd[5], fin.cmd[6],
-				       fin.cmd[7]);
+				       string(client).c_str(), fin.cmd[34],
+				       fin.cmd[35], fin.cmd[36], fin.cmd[37],
+				       fin.cmd[38], fin.cmd[39], fin.cmd[40],
+				       fin.cmd[41]);
 		} else {
                     HOTSTUFF_LOG_DEBUG("reply client %lu bytes to %s",
 				       fin.cmd.size(), string(client).c_str());
@@ -159,14 +159,14 @@ class Replica: public HotStuff {
     }
 
     void on_cli(MsgPayload &&msg, const conn_t &c) {
-        if (msg.payload.size() >= 8) {
+        if (msg.payload.size() >= 42) {
             HOTSTUFF_LOG_DEBUG("received client command (%lu bytes): "
 			       "%02hhx %02hhx %02hhx %02hhx %02hhx %02hhx "
 			       "%02hhx %02hhx", msg.payload.size(),
-			       msg.payload[0], msg.payload[1],
-			       msg.payload[2], msg.payload[3],
-			       msg.payload[4], msg.payload[5],
-			       msg.payload[6], msg.payload[7]);
+			       msg.payload[34], msg.payload[35],
+			       msg.payload[36], msg.payload[37],
+			       msg.payload[38], msg.payload[39],
+			       msg.payload[40], msg.payload[41]);
 	} else {
             HOTSTUFF_LOG_DEBUG("received client command (%lu bytes)",
 			       msg.payload.size());
