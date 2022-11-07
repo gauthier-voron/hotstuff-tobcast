@@ -126,9 +126,18 @@ class Replica: public HotStuff {
             const auto &client = *it;
 
             try {
-                HOTSTUFF_LOG_DEBUG("reply client %lu bytes to "
-                           "%s", fin.cmd.size(),
-                           string(client).c_str());
+                if (fin.cmd.size() >= 8) {
+                    HOTSTUFF_LOG_DEBUG("reply client %lu bytes to %s: %02hhx "
+				       "%02hhx %02hhx %02hhx %02hhx %02hhx "
+				       "%02hhx %02hhx", fin.cmd.size(),
+				       string(client).c_str(), fin.cmd[0],
+				       fin.cmd[1], fin.cmd[2], fin.cmd[3],
+				       fin.cmd[4], fin.cmd[5], fin.cmd[6],
+				       fin.cmd[7]);
+		} else {
+                    HOTSTUFF_LOG_DEBUG("reply client %lu bytes to %s",
+				       fin.cmd.size(), string(client).c_str());
+		}
                 cn.send_msg(MsgPayload(fin.cmd), client);
                 ++it;
             } catch (...) {
@@ -150,8 +159,18 @@ class Replica: public HotStuff {
     }
 
     void on_cli(MsgPayload &&msg, const conn_t &c) {
-        HOTSTUFF_LOG_DEBUG("received client command (%lu bytes)",
-                   msg.payload.size());
+        if (msg.payload.size() >= 8) {
+            HOTSTUFF_LOG_DEBUG("received client command (%lu bytes): "
+			       "%02hhx %02hhx %02hhx %02hhx %02hhx %02hhx "
+			       "%02hhx %02hhx", msg.payload.size(),
+			       msg.payload[0], msg.payload[1],
+			       msg.payload[2], msg.payload[3],
+			       msg.payload[4], msg.payload[5],
+			       msg.payload[6], msg.payload[7]);
+	} else {
+            HOTSTUFF_LOG_DEBUG("received client command (%lu bytes)",
+			       msg.payload.size());
+	}
 
         exec_command(msg.payload, [this, msg, c](Finality fin) {
             if (!fin.decision)
