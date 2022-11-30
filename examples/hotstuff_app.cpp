@@ -50,7 +50,6 @@ using hotstuff::TimerEvent;
 using hotstuff::EventContext;
 using hotstuff::NetAddr;
 using hotstuff::HotStuffError;
-using hotstuff::CommandDummy;
 using hotstuff::Finality;
 using hotstuff::command_t;
 using hotstuff::uint256_t;
@@ -93,12 +92,6 @@ class HotStuffApp: public HotStuff {
     salticidae::BoxObj<salticidae::ThreadCall> req_tcall;
 
     void client_request_cmd_handler(MsgReqCmd &&, const conn_t &);
-
-    static command_t parse_cmd(DataStream &s) {
-        auto cmd = new CommandDummy();
-        s >> *cmd;
-        return cmd;
-    }
 
     void reset_imp_timer() {
         impeach_timer.del();
